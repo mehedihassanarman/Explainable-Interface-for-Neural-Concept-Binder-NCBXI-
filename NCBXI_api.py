@@ -7,6 +7,8 @@ from matplotlib.image import imread
 from torchvision import transforms
 import matplotlib.pyplot as plt
 from NeuralConceptBinder.neural_concept_binder import NeuralConceptBinder
+import matplotlib
+matplotlib.use('Agg')
 
 
 class Args:
@@ -498,7 +500,7 @@ def interventional_inspection(block_concepts, model, example_path: str, block_id
     plt.figure(figsize=(4, 4))
     plt.imshow(swapped_img)
     plt.axis('off')
-    plt.title(f"Interventional Inspection: Block {block_id}, Cluster {cluster_id}", fontsize=12)
+    plt.title(f"Interventional Inspection: Block {block_id}, Cluster {cluster_id}", fontsize=11)
     plt.tight_layout()
 
     # Ensure the directory exists
