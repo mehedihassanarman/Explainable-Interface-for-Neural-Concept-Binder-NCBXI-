@@ -11,7 +11,7 @@ import matplotlib
 matplotlib.use('Agg')
 
 
-# Loads all rparameters for model loading and evaluation
+# Loads all parameters for model loading and evaluation
 class Args:
     def __init__(self,model_path):
         # Generic Parameters
