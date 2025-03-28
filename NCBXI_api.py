@@ -11,6 +11,7 @@ import matplotlib
 matplotlib.use('Agg')
 
 
+# Holds all hyperparameters and file paths for model loading and evaluation
 class Args:
     def __init__(self,model_path):
         # Generic Parameters
@@ -79,20 +80,17 @@ class Args:
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
 
-# Function to load the pretrained model
+# Loads the pretrained NCB model
 def load_model(args):
     model = NeuralConceptBinder(args)
     checkpoint = torch.load(args.checkpoint_path, map_location=args.device)
-    #print(f"Checkpoint num_blocks: {checkpoint['args'].num_blocks}")  # If checkpoint stores the training args
     model.load_state_dict(checkpoint['model'], strict=False)
     model.to(args.device)
     model.eval()
-    #print(f"Model num_blocks: {model.num_blocks}")
-
     return model
 
 
-# Preprocess the input image for the model
+# Preprocesses an image and returns tensor + original PIL image
 def preprocess_image(image_path, img_size):
     transform = transforms.Compose([
         transforms.Resize((img_size, img_size)),
@@ -102,7 +100,7 @@ def preprocess_image(image_path, img_size):
     return transform(image).unsqueeze(0), image
 
 
-# Run inference for the input image
+# Runs model inference and returns discrete concept codes and probabilities
 def run_inference(image_tensor, model, device):
     image_tensor = image_tensor.to(device)
     model.eval()
@@ -111,15 +109,14 @@ def run_inference(image_tensor, model, device):
     return codes, probs
 
 
-# Preprocess image paths for implicit inspection
+# Preprocesses paths for inspection functions
 def preprocess_image_paths(all_img_locs):
     for i in range(len(all_img_locs)):
-        if "wolf" in all_img_locs[i]:
-            all_img_locs[i] = "data/" + "/".join(all_img_locs[i].split("/")[3:])
+        all_img_locs[i] = "data/" + "/".join(all_img_locs[i].split("/")[3:])
     return all_img_locs
 
 
-#  Load the retrieval corpus and create block concepts.
+# Loads retrieval corpus of learned concepts and organizes them by block
 def create_block_concepts(retrieval_corpus_path):
     print("Loading retrieval corpus...")
     with open(retrieval_corpus_path, "rb") as f:
@@ -138,19 +135,18 @@ def create_block_concepts(retrieval_corpus_path):
     print(f"Loaded block concepts: {list(block_concepts.keys())}")
     return block_concepts
 
-# Convert a tensor image to a NumPy array for visualization.  'tensor_img' is the Tensor representation of the image.
+
+# Converts tensor image to NumPy array for plotting
 def tensor_img_to_np(tensor_img: torch.Tensor):
     tensor_img = tensor_img.detach().cpu()
     if len(tensor_img.shape) == 4:  # Batch of images
         img = tensor_img.permute(0, 2, 3, 1).numpy()
-    else:  # Single image
-        img = tensor_img.permute(1, 2, 0).numpy()
-    return np.clip(img, 0, 1)  # Ensure pixel values are in range
+    else:  
+        img = tensor_img.permute(1, 2, 0).numpy() # Single image
+    return np.clip(img, 0, 1) 
 
 
-
-
-# Function: slots_to_blocks
+# Reshapes slot encodings into blocks for individual concept inspection
 def slots_to_blocks(slots, args):
     B, num_slots, slot_size = slots.shape
     block_size = slot_size // args.num_blocks
@@ -158,7 +154,7 @@ def slots_to_blocks(slots, args):
     return slots.view(B, args.num_blocks, block_size)
 
 
-# Load an image as a tensor specifically for conceptual inspection. Returns Torch tensor of the image suitable for encoding.
+# Loads an image as tensor for encoding (no PIL image returned)
 def load_img_as_tensor(file_path: str, device: str):   
     transform = transforms.Compose([
         transforms.Resize((128, 128)),
@@ -168,19 +164,8 @@ def load_img_as_tensor(file_path: str, device: str):
     return transform(img).unsqueeze(0).to(device)
 
 
-#new functions for comparative inspection
-def slot_by_image(encoding: torch.tensor):
-    """Return the slot in which the object is located."""
-    slot_sums = np.zeros(4)
-    for s in range(4):
-        slot = encoding[:, s, :].unsqueeze(0)
-        img = model.model.decode(slot)
-        slot_sums[s] += img.sum().item()
-    return np.argmin(slot_sums)
-
-
+# Identifies the slot most activated by computing distance between encodings. Infer the slot where the object is located based on encoding.
 def slot_based_on_encoding(encoding: torch.tensor):
-    """Infer the slot where the object is located based on encoding."""
     encoding = encoding[0]
     res = np.zeros(encoding.shape[0])
     for i in range(encoding.shape[0]):
@@ -188,37 +173,12 @@ def slot_based_on_encoding(encoding: torch.tensor):
     return np.argmax(res)
 
 
-def swap_block(source: torch.tensor, target: torch.tensor, block_id: int):
-    """Swaps block data between source and target encodings."""
-    t = target.clone()
-    s = source.clone()
-    tmp = t[:, block_id].clone()
-    t[:, block_id] = s[:, block_id]
-    s[:, block_id] = tmp
-    return s, t
-
-
-def vis_clusters_by_random_generations(block_concepts):
-    """Visualize random generations for clusters in all blocks."""
-    proto_generation = []
-    for block_id, block_data in block_concepts.items():
-        prototypes = block_data['prototypes']['prototypes']
-        exemplars = block_data['exemplars']['exemplars']
-        for cluster_id, prototype in enumerate(prototypes):
-            cluster_imgs = [load_img_as_tensor(exemplar) for exemplar in exemplars[cluster_id]]
-            proto_generation.append((block_id, cluster_id, cluster_imgs))
-    return proto_generation
-
-
-#end of new functions for comparative inspection
-
-
-
-
-# To visualize the blocks and their activated concepts.
+# Visualizes the concept image that was activated in a specific block based on the encoding (concept ID) returned by the model.
 def visualize_block(block_idx, codes,model_path):
     codes = codes.squeeze(0).cpu().numpy()
     base_path = f"{model_path}clustered_exemplars/"
+    
+    # Location for the output image of concept block for app.py
     output_plot_path = "static/images/plots/Visualize_Concept_Block/Concept_Block.png"
 
     concept_id = int(codes[0, block_idx])
@@ -237,23 +197,23 @@ def visualize_block(block_idx, codes,model_path):
     plt.axis("off")
     plt.tight_layout()
 
-    # Ensure the directory exists
+    # To make sure the directory exists
     os.makedirs(os.path.dirname(output_plot_path ), exist_ok=True)
 
-    # Delete the previous image if it exists
+    # Delete if there any previous image exists
     if os.path.exists(output_plot_path):
         os.remove(output_plot_path )
 
-    # Save the new plot
-    plt.savefig(output_plot_path , bbox_inches="tight", dpi=300)
-    #plt.show()
+    # Save the output image
+    plt.savefig(output_plot_path , bbox_inches="tight", dpi=600)
+    plt.show()
     print(f'Plot of Visual Concept Block has been saved to "{output_plot_path}"')
 
 
 
 
-# Function for the Implicit Inspection. Direct inspection of the exemplars of a cluster. Generates a plot with exp_per_cluster exemplars of the specified cluster from the specified block
-def implicit_inspection(block_concepts, all_img_locs, block_id: int, cluster_id: int, exp_per_cluster: int = 5, title: str = None):
+# Displays example images (exemplars) for a specific concept cluster to understand what kind of visual patterns the concept represents.
+def implicit_inspection(block_concepts, all_img_locs, block_id: int, cluster_id: int, exp_per_cluster: int = 5):
 
     # To raise error when block_id or cluster_id out of range
 #    if block_id not in block_concepts:
@@ -262,7 +222,6 @@ def implicit_inspection(block_concepts, all_img_locs, block_id: int, cluster_id:
 #    if cluster_id >= len(block_concepts[block_id]['prototypes']['ids']):
 #        raise ValueError(f"Cluster ID {cluster_id} is out of range for Block {block_id}. "
 #                         f"Available clusters: {len(block_concepts[block_id]['prototypes']['ids']) - 1}.")
-    
         
     # To print error instead of raise error when block_id or cluster_id out of range
     if block_id not in block_concepts:
@@ -274,51 +233,47 @@ def implicit_inspection(block_concepts, all_img_locs, block_id: int, cluster_id:
               f"Available clusters: {len(block_concepts[block_id]['prototypes']['ids']) - 1}.")
         return
    
-
-    #assert block_id in block_concepts, f"Block {block_id} not found in block_concepts."
-    #assert cluster_id < len(block_concepts[block_id]['prototypes']['ids']), "Cluster id exceeds number of clusters."
-
+    # Location for the output image of Implicit Inspection for app.py
     output_plot_path = "static/images/plots/Implicit_Inspection/Implicit_Inspection.png"
 
     exemplar_ids = block_concepts[block_id]['exemplars']['exemplar_ids'][cluster_id]
     num_exemplars = len(exemplar_ids)
+
     if num_exemplars < exp_per_cluster:
-        print(f"Cluster {cluster_id} in Block {block_id} has only {num_exemplars} exemplars. Adjusting to available size.")
+        print(f"Cluster {cluster_id} in Block {block_id} has only {num_exemplars} exemplars. Adjusting.")
         exp_per_cluster = num_exemplars
 
-    fig, axs = plt.subplots(1, exp_per_cluster, figsize=(15, 5))
+    fig, axs = plt.subplots(1, exp_per_cluster, figsize=(4 * exp_per_cluster, 4))
 
     for i in range(exp_per_cluster):
-        exemplar_id = exemplar_ids[i]
-        image_path = all_img_locs[exemplar_id]
-        axs[i].imshow(imread(image_path))
-        axs[i].axis('off')
-        axs[i].set_title(f"Exemplar {i+1}")
-
-    if title:
-        plt.suptitle(title, fontsize=16)
-        plt.savefig(f"plots/{title}.pdf")
-    else:
-        plt.suptitle(f"Implicit Inspection: Block {block_id}, Cluster {cluster_id}", fontsize=16)
-        plt.tight_layout()
-
-        # Ensure the directory exists
-        os.makedirs(os.path.dirname(output_plot_path ), exist_ok=True)
-
-        # Delete the previous image if it exists
-        if os.path.exists(output_plot_path):
-            os.remove(output_plot_path )
-
-        # Save the new plot
-        plt.savefig(output_plot_path , bbox_inches="tight", dpi=300)
-        #plt.show()
-        print(f'Plot of Implicit Inspection has been saved to "{output_plot_path}"')
+        try:
+            image_path = all_img_locs[exemplar_ids[i]]
+            axs[i].imshow(imread("../" + image_path))  
+            axs[i].axis("off")
+            axs[i].set_title(f"Exemplar {i+1}")
+        except IndexError:
+            print(f"Skipped index {exemplar_ids[i]} (out of bounds in all_img_locs)")
+            continue
 
 
+    plt.suptitle(f"Implicit Inspection: Block {block_id}, Cluster {cluster_id}", fontsize=16)
+    plt.tight_layout()
+
+    # To make sure the directory exists
+    os.makedirs(os.path.dirname(output_plot_path ), exist_ok=True)
+
+    # Delete if there any previous image exists
+    if os.path.exists(output_plot_path):
+        os.remove(output_plot_path )
+
+    # Save the output image
+    plt.savefig(output_plot_path , bbox_inches="tight", dpi=300)
+    plt.show()
+    print(f'Plot of Implicit Inspection has been saved to "{output_plot_path}"')
 
 
 
-# Function for the Comparative Inspection. Perform comparative inspection by comparing a given example's activation in the context of a specified block and cluster
+# Compares an image’s activation with two concept clusters (closest vs specified) to highlight the differences in representation for comparative analysis.
 def comparative_inspection(block_concepts, all_img_locs, model, example_path: str, block_id: int, cluster_id: int, num_exemplars: int = 3):
 
     # To raise error when block_id or cluster_id out of range
@@ -328,7 +283,6 @@ def comparative_inspection(block_concepts, all_img_locs, model, example_path: st
 #    if cluster_id >= len(block_concepts[block_id]['prototypes']['ids']):
 #        raise ValueError(f"Cluster ID {cluster_id} is out of range for Block {block_id}. "
 #                         f"Available clusters: {len(block_concepts[block_id]['prototypes']['ids']) - 1}.")
- 
 
     # To print error instead of raise error when block_id or cluster_id out of range
     if block_id not in block_concepts:
@@ -340,23 +294,19 @@ def comparative_inspection(block_concepts, all_img_locs, model, example_path: st
               f"Available clusters: {len(block_concepts[block_id]['prototypes']['ids']) - 1}.")
         return
 
-
-    #assert block_id in block_concepts, f"Block {block_id} not found in block_concepts."
-
+    # Location for the output image of Comparative Inspection for app.py
     output_plot_path = "static/images/plots/Comparative_Inspection/Comparative_Inspection.png"
 
-    # Load and preprocess the example image
+    # Encode input image
     example_tensor, _ = preprocess_image(example_path, 128)
     example_tensor = example_tensor.to(model.device)
-
-    # Encode the image using the model
     enc, _ = run_inference(example_tensor, model, model.device)
 
-    # Determine the closest cluster from encoding
-    if len(enc.shape) == 2:  
+    # Identify closest cluster from encoding
+    if len(enc.shape) == 2:
         closest_cluster = int(enc[0, block_id].item())
     elif len(enc.shape) == 3:
-        slot = slot_based_on_encoding(enc)  # Identify the most activated slot
+        slot = slot_based_on_encoding(enc)
         closest_cluster = int(enc[0, slot, block_id].item())
     else:
         print(f"Unexpected encoding shape: {enc.shape}")
@@ -364,69 +314,56 @@ def comparative_inspection(block_concepts, all_img_locs, model, example_path: st
 
     print(f"Closest cluster for Block {block_id}: {closest_cluster}. Comparing against Cluster {cluster_id}.")
 
-    # Get exemplars from the closest cluster
-    closest_exemplars = block_concepts[block_id]['exemplars']['exemplar_ids'][closest_cluster]
-    exemplars_closest = list(closest_exemplars[:num_exemplars])  # Convert to list
+    # Fetch exemplar IDs
+    exemplars_closest = list(block_concepts[block_id]['exemplars']['exemplar_ids'][closest_cluster][:num_exemplars])
+    exemplars_different = list(block_concepts[block_id]['exemplars']['exemplar_ids'][cluster_id][:num_exemplars])
 
-    # Get exemplars from the different cluster
-    different_exemplars = block_concepts[block_id]['exemplars']['exemplar_ids'][cluster_id]
-    exemplars_different = list(different_exemplars[:num_exemplars])  # Convert to list
-
-    # Ensure we have enough images
+    # Warn if not enough
     if len(exemplars_closest) < num_exemplars:
-        print(f"Warning: Closest cluster {closest_cluster} in Block {block_id} has only {len(exemplars_closest)} exemplars.")
-    
+        print(f"Closest cluster {closest_cluster} has only {len(exemplars_closest)} exemplars.")
     if len(exemplars_different) < num_exemplars:
-        print(f"Warning: Cluster {cluster_id} in Block {block_id} has only {len(exemplars_different)} exemplars.")
+        print(f"Cluster {cluster_id} has only {len(exemplars_different)} exemplars.")
 
-    # Merge into a single list (first `num_exemplars` from closest, then `num_exemplars` from different)
-    all_exemplars = exemplars_closest + exemplars_different  
-
-    # If not enough images, pad with available ones
+    all_exemplars = exemplars_closest + exemplars_different
     while len(all_exemplars) < num_exemplars * 2:
-        all_exemplars.append(all_exemplars[-1])  # Repeat last image
+        all_exemplars.append(all_exemplars[-1])
 
-    # Set up the figure with subplots (1 input image + 2 * num_exemplars exemplars)
     fig, axs = plt.subplots(1, 1 + num_exemplars * 2, figsize=(5 * (1 + num_exemplars * 2), 5))
 
-    # Display input image
+    # Show input image
     axs[0].imshow(imread(example_path))
-    axs[0].axis('off')
-    axs[0].set_title("Input Image", fontsize=12, pad=10)
+    axs[0].axis("off")
+    axs[0].set_title("Input Image", fontsize=12)
 
-    # Display exemplars from the closest cluster
-    for i in range(num_exemplars):
-        axs[i + 1].imshow(imread(all_img_locs[all_exemplars[i]]))
-        axs[i + 1].axis('off')
-        axs[i + 1].set_title(f"Closest {i+1}", fontsize=10, pad=8)
-
-    # Display exemplars from the different cluster
-    for i in range(num_exemplars):
-        axs[num_exemplars + 1 + i].imshow(imread(all_img_locs[all_exemplars[num_exemplars + i]]))
-        axs[num_exemplars + 1 + i].axis('off')
-        axs[num_exemplars + 1 + i].set_title(f"Different {i+1}", fontsize=10, pad=8)
+    # Show exemplars
+    for i in range(num_exemplars * 2):
+        try:
+            img_path = "../" + all_img_locs[all_exemplars[i]]
+            axs[i + 1].imshow(imread(img_path))
+            axs[i + 1].axis("off")
+            label = "Closest" if i < num_exemplars else "Different"
+            axs[i + 1].set_title(f"{label} {i % num_exemplars + 1}", fontsize=10)
+        except IndexError:
+            print(f"Skipped invalid exemplar index: {all_exemplars[i]}")
 
     plt.suptitle(f"Comparative Inspection: Block {block_id}\nClosest Cluster {closest_cluster} vs. Cluster {cluster_id}", fontsize=14, y=1.05)
+    plt.tight_layout()
 
-
-    # Ensure the directory exists
+    # To make sure the directory exists
     os.makedirs(os.path.dirname(output_plot_path ), exist_ok=True)
 
-    # Delete the previous image if it exists
+    # Delete if there any previous image exists
     if os.path.exists(output_plot_path):
         os.remove(output_plot_path )
 
-    # Save the new plot
+    # Save the output image
     plt.savefig(output_plot_path , bbox_inches="tight", dpi=600)
     plt.show()
     print(f'Plot of Comparative Inspection has been saved to "{output_plot_path}"')
 
 
 
-
-
-
-# Function for the Interventional Inspection. Perform Interventional inspection by modifying the encoding of an image  with a prototype tensor from the specified block and cluster.
+# Intervenes in the model's latent space by swapping a block with a prototype concept to observe the effect of concept-level editing on the output image.
 def interventional_inspection(block_concepts, model, example_path: str, block_id: int, cluster_id: int, args):
 
     # To raise error when block_id or cluster_id out of range
@@ -448,12 +385,8 @@ def interventional_inspection(block_concepts, model, example_path: str, block_id
               f"Available clusters: {len(block_concepts[block_id]['prototypes']['ids']) - 1}.")
         return
     
-
+    # Location for the output image of Interventional Inspection for app.py
     output_plot_path = "static/images/plots/Interventional_Inspection/Interventional_Inspection.png"
-
-
-    # Validate cluster_id
-    #assert cluster_id < len(block_concepts[block_id]['prototypes']['ids']), f"Cluster id {cluster_id} exceeds the number of clusters."
 
     # Load the image as a tensor
     img_tensor = load_img_as_tensor(example_path, model.device)
@@ -466,7 +399,7 @@ def interventional_inspection(block_concepts, model, example_path: str, block_id
     #print(f"Encoding shape after reshaping to blocks: {enc.shape}")
 
     # Verify block_id is valid
-    num_blocks = enc.size(2)  # Number of blocks in the tensor
+    num_blocks = enc.size(2)  
     #print(f"Available blocks: {num_blocks}")
     assert block_id < num_blocks, f"Block ID {block_id} is out of bounds. Available blocks: {num_blocks - 1}"
 
@@ -474,7 +407,7 @@ def interventional_inspection(block_concepts, model, example_path: str, block_id
     proto_enc = torch.tensor(
         block_concepts[block_id]['prototypes']['prototypes'][cluster_id],
         device=enc.device
-    ).unsqueeze(0)  # Ensure correct dimensions
+    ).unsqueeze(0)  
 
     # Resize prototype if necessary
     if proto_enc.shape[-1] != enc.shape[-1]:
@@ -503,14 +436,14 @@ def interventional_inspection(block_concepts, model, example_path: str, block_id
     plt.title(f"Interventional Inspection: Block {block_id}, Cluster {cluster_id}", fontsize=11)
     plt.tight_layout()
 
-    # Ensure the directory exists
+    # To make sure the directory exists
     os.makedirs(os.path.dirname(output_plot_path ), exist_ok=True)
 
-    # Delete the previous image if it exists
+    # Delete if there any previous image exists
     if os.path.exists(output_plot_path):
         os.remove(output_plot_path )
 
-    # Save the new plot
+    # Save the output image
     plt.savefig(output_plot_path , bbox_inches="tight", dpi=600)
     plt.show()
     print(f'Plot of Interventional Inspection has been saved to "{output_plot_path}"')
