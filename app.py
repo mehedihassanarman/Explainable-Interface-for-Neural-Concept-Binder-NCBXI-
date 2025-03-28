@@ -13,6 +13,7 @@ import re
 import torch
 from flask import Flask, request, render_template, send_from_directory, jsonify, session, send_file
 import pandas as pd
+import pickle
 
 # Import 'NCBXI_api.py' for model operations and concept inspections
 from NCBXI_api import (
@@ -326,10 +327,11 @@ def get_implicit_inspection():
                f"Available clusters: {len(block_concepts[block_id]['prototypes']['ids']) - 1}.")
         return jsonify({"success": False, "message": msg}), 200
 
-    # Obtain image paths from the training set for matching or demonstration
-    all_img_locs = preprocess_image_paths([
-        os.path.join(args.data_dir, f"train/images/CLEVR_4_classid_0_{i:06}.png") for i in range(5000)
-    ])
+    # Pre-process image path
+    with open("../model/CLEVR-4/retbind_seed_2/all_img_locs.pkl", "rb") as f:
+        all_img_locs = pickle.load(f)
+
+    all_img_locs = preprocess_image_paths(all_img_locs) 
 
     # The actual inspection is performed in NCBXI_api.py
     implicit_inspection(block_concepts, all_img_locs, block_id=block_id, cluster_id=cluster_id)
@@ -385,10 +387,11 @@ def get_comparative_inspection():
                f"Available clusters: {len(block_concepts[block_id]['prototypes']['ids']) - 1}.")
         return jsonify({"success": False, "message": msg}), 200
 
-    # Retrieve all possible training image locations for demonstration
-    all_img_locs = preprocess_image_paths([
-        os.path.join(args.data_dir, f"train/images/CLEVR_4_classid_0_{i:06}.png") for i in range(5000)
-    ])
+    # Pre-process image path
+    with open("../model/CLEVR-4/retbind_seed_2/all_img_locs.pkl", "rb") as f:
+        all_img_locs = pickle.load(f)
+
+    all_img_locs = preprocess_image_paths(all_img_locs) 
 
     # The comparative_inspection function in NCBXI_api.py handles the actual analysis and plotting
     comparative_inspection(
