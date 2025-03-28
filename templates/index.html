@@ -1,0 +1,449 @@
+<!-- 
+  index.html
+  This HTML file provides the main user interface for NCBXI.
+  It links to styles.css for styling and script.js for dynamic behavior.
+  It also communicates with app.py (Flask server) via forms and AJAX requests 
+  for model operations, inspections, and feedback.
+-->
+
+<!-- 
+  The DOCTYPE declaration informs the browser that this document is an HTML5 file.
+  Ensures consistent rendering across browsers.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+
+  <!-- 
+    Preconnect to Google's font server. Improves performance 
+    by establishing early connections for font loading.
+  -->
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  
+  <!-- 
+    Link to a "handwriting" style font from Google Fonts.
+    Used to demonstrate a unique textual presentation if desired.
+  -->
+  <link href="https://fonts.googleapis.com/css2?family=Handlee&display=swap" rel="stylesheet">
+  
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>NCBXI</title>
+
+  <!-- 
+    Links to the external stylesheet 'styles.css' 
+    which contains all visual styling for this page.
+    "{{ url_for('static', filename='css/styles.css') }}" 
+    generates the correct static path within Flask.
+    
+    In app.py, 'static_folder="static"' is defined, so 
+    the 'static' directory is used for CSS, JS, images, etc.
+  -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+
+  <!-- 
+    Top Header Section: 
+    - Displays the main title of the application 
+    - Houses icons for navigating to external links and for downloading feedback.
+    - This header is styled in styles.css (top-header class).
+  -->
+  <div class="top-header">
+    <h1>Explainable Interface for Neural Concept Binder (NCBXI)</h1>
+
+    <!-- 
+      Right side container that holds interactive icons, 
+      such as an "Actions" dropdown and a "Download Feedback" button.
+      This container and associated icons are styled in styles.css 
+      (header-icons-container, icon-button, tooltip, etc.).
+    -->
+    <div class="header-icons-container">
+      
+      <!-- 
+        Dropdown button for "Actions." 
+        Clicking toggles visibility of associated dropdown content, 
+        which provides links to GitHub and the NCB Web.
+        The "toggleActionsDropdown()" function is defined in script.js.
+      -->
+      <div class="dropdown tooltip">
+        <div class="icon-button"
+             id="actionsButton"
+             onclick="toggleActionsDropdown()"
+             style="border:none; cursor:pointer;">
+          <img src="{{ url_for('static', filename='images/icons/action.gif') }}"
+               alt="Actions"
+               style="height:24px; width:24px;">
+        </div>
+        <span class="tooltiptext">Web Links</span>
+
+        <!-- 
+          The actual dropdown menu; only displayed when 'actionsButton' is clicked.
+          The .show class toggles from script.js on clicks outside or on the button.
+        -->
+        <div class="dropdown-content" id="actionsDropdown">
+          <a href="https://github.com/mehedihassanarman/Explainable-Interface-for-Neural-Concept-Binder-NCBXI-" target="_blank">
+            NCBXI Github
+          </a>
+          <a href="https://ml-research.github.io/NeuralConceptBinder/" target="_blank">
+            NCB Web
+          </a>
+        </div>
+      </div>
+
+      <!-- 
+        Button/icon to download 'feedback.xlsx' file. 
+        A tooltip clarifies its purpose to the user.
+        The "download_feedback" route in app.py serves this file if it exists.
+      -->
+      <div class="tooltip">
+        <div class="icon-button">
+          <a href="/download_feedback"
+             id="downloadFeedbackButton"
+             style="border:none; background:none;">
+            <img src="{{ url_for('static', filename='images/icons/feedback.gif') }}"
+                 alt="Download Feedback"
+                 style="height:24px; width:24px;">
+          </a>
+        </div>
+        <span class="tooltiptext">Download feedback.xlsx</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 
+    Main content container. Divided into three columns: 
+    left (image analysis), middle (operation mode), right (output visualization).
+    The layout is handled by styles in styles.css (.content-container).
+  -->
+  <div class="content-container">
+    <!-- Left Section -->
+    <div class="left">
+      <div class="modern-box">
+        <h2 class="section-heading">Image Analysis</h2>
+      </div>
+
+      <!-- 
+        Container for navigating and displaying the selected image. 
+        The buttons allow the user to quickly switch to previous/next images.
+        The "prevImage()" and "nextImage()" functions are in script.js.
+      -->
+      <div class="image-container">
+        <button class="nav-button prev" onclick="prevImage()">&#10094;</button>
+        <img id="display-image" src="{{ url_for('get_image', filename=first_image) }}" alt="Image" onclick="openGallery()" loading="lazy">
+        <button class="nav-button next" onclick="nextImage()">&#10095;</button>
+      </div>
+      <div id="selected-image-name" onclick="openGallery()">{{ first_image }}</div>
+
+      <!-- 
+        Form for triggering the model run. 
+        The image path is passed as hidden input to /run_model route in app.py.
+        The script.js attaches a 'handleFormSubmission' event listener 
+        to manage the fetch request for run_model.
+      -->
+      <div class="run-model-container">
+        <form id="run-model-form" action="/run_model" method="POST">
+          <input type="hidden" name="image_path" id="selected-image-path" value="{{ first_image }}">
+          <button type="submit" class="btn-elegant selectable-button" style="border-radius:25px;" id="runModelButton">
+            Run Model
+          </button>
+        </form>
+      </div>
+
+      <!-- 
+        Displays information about the model/device, 
+        including the device used (CPU/GPU), 
+        number of concepts per block, and the activated concepts.
+        script.js updates these elements after run_model or other endpoints complete.
+      -->
+      <div id="model-info-box" class="modern-info-box">
+        <!-- Device line -->
+        <p class="info-line" id="device-line" style="display:none;"></p>
+
+        <!-- ADDED line for "Number of concepts per block:" -->
+        <p class="info-line" id="concept-line" style="display:none;"></p>
+
+        <!-- Activated concepts line -->
+        <p class="info-line" id="codes-line" style="display:none;"></p>
+      </div>
+    </div>
+
+    <!-- Middle Section -->
+    <div class="middle">
+      <div class="modern-box">
+        <h2 class="section-heading">Operation Mode</h2>
+      </div>
+
+      <!-- 
+        Accordion container for different inspection modes:
+        1) Concept Block Visualization
+        2) Implicit Inspection
+        3) Comparative Inspection
+        4) Interventional Inspection
+        The toggling of sections is handled by script.js 
+        (toggleAccordion function).
+      -->
+      <div class="accordion-container">
+        <!-- Visualization -->
+        <button type="button" class="accordion-btn" onclick="toggleAccordion('visualization-section')">
+          Concept Block Visualization
+        </button>
+        <div id="visualization-section" class="accordion-content" style="display: none;">
+          <div style="display: none;">
+            <form id="visualization-form" action="/visualization" method="POST">
+              <input type="hidden" name="image_path" id="selected-image-path-visualization">
+              <label for="block_id">Block ID:</label>
+              <input type="number" name="block_id" required>
+              <button type="submit" class="btn-elegant">Run Visualization</button>
+            </form>
+          </div>
+
+          <!-- 
+            Buttons to select the block ID. Clicking triggers the 'runVisualization' function, 
+            which requests a visualization for that specific block from /visualization in app.py.
+          -->
+          <h3 class="modern-heading">Select a concept block for visualization</h3>
+          <div class="block-buttons-container">
+            {% for b in range(16) %}
+            <button class="btn-elegant block-button selectable-button" onclick="runVisualization('{{ b }}')">
+              Block {{ b }}
+            </button>
+            {% endfor %}
+          </div>
+
+          <hr style="margin: 20px 0;">
+
+          <!-- 
+            Feedback button and section for the visualized block. 
+            Initially hidden, displayed after a user runs the block visualization.
+            The "toggleFeedbackSection()" function in script.js 
+            shows or hides this block's feedback UI.
+          -->
+          <div style="text-align:center;">
+            <button class="btn-elegant" id="toggle-feedback-btn" style="margin-bottom:10px; border-radius:0px;" onclick="toggleFeedbackSection()">
+              Provide Feedback for Visualized Block
+            </button>
+          </div>
+
+          <div id="visualization-feedback-section" style="display:none; text-align:center;">
+            <!-- 
+              A warning message if feedback is requested before the user has actually visualized a block. 
+              Controlled by script.js (if no block visualization has occurred).
+            -->
+            <div id="feedback-not-available" 
+                 style="font-family:'Comic Sans MS'; font-weight:bold; font-size:16px; color:#B71C1C; display:none;">
+              Feedback becomes accessible once the Concept block is visualized in the output section.
+            </div>
+
+            <!-- 
+              Feedback options for the block, including predefined shape, size, material, 
+              and color labels, plus a text input for custom feedback.
+              The "submitFeedback()" and "submitFeedbackText()" functions in script.js
+              handle the feedback POST to /save_feedback in app.py.
+            -->
+            <div id="feedback-options" style="display:none; margin-top: 15px;">
+              <div class="feedback-buttons-grid">
+                <button class="btn-elegant feedback-btn selectable-button" onclick="submitFeedback('cube')">cube</button>
+                <button class="btn-elegant feedback-btn selectable-button" onclick="submitFeedback('sphere')">sphere</button>
+                <button class="btn-elegant feedback-btn selectable-button" onclick="submitFeedback('cylinder')">cylinder</button>
+                <button class="btn-elegant feedback-btn selectable-button" onclick="submitFeedback('small')">small</button>
+
+                <button class="btn-elegant feedback-btn selectable-button" onclick="submitFeedback('large')">large</button>
+                <button class="btn-elegant feedback-btn selectable-button" onclick="submitFeedback('metal')">metal</button>
+                <button class="btn-elegant feedback-btn selectable-button" onclick="submitFeedback('rubber')">rubber</button>
+                <button class="btn-elegant feedback-btn selectable-button" onclick="submitFeedback('gray')">gray</button>
+
+                <button class="btn-elegant feedback-btn selectable-button" onclick="submitFeedback('red')">red</button>
+                <button class="btn-elegant feedback-btn selectable-button" onclick="submitFeedback('blue')">blue</button>
+                <button class="btn-elegant feedback-btn selectable-button" onclick="submitFeedback('green')">green</button>
+                <button class="btn-elegant feedback-btn selectable-button" onclick="submitFeedback('brown')">brown</button>
+
+                <button class="btn-elegant feedback-btn selectable-button" onclick="submitFeedback('purple')">purple</button>
+                <button class="btn-elegant feedback-btn selectable-button" onclick="submitFeedback('cyan')">cyan</button>
+                <button class="btn-elegant feedback-btn selectable-button" onclick="submitFeedback('yellow')">yellow</button>
+                <button class="btn-elegant feedback-btn selectable-button" onclick="submitFeedback('uncertain')">uncertain</button>
+              </div>
+
+              <div class="text-feedback-container">
+                <div class="text-feedback-wrapper">
+                  <input type="text" id="feedback-text-input" class="feedback-text-input" placeholder="Enter custom feedback..."/>
+                  <button class="save-feedback-btn" onclick="submitFeedbackText()">
+                    𓂃🖊
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Implicit Inspection -->
+        <button type="button" class="accordion-btn" onclick="toggleAccordion('implicit-section')">
+          Implicit Inspection
+        </button>
+        <div id="implicit-section" class="accordion-content" style="display: none;">
+          <!-- 
+            Form to run implicit inspection. 
+            Shows examples from the training data that share the same cluster concept.
+            The "implicit_inspection" endpoint is handled by app.py. 
+          -->
+          <div class="modern-form">
+            <p>Explore the examples of this concept</p>
+            <form id="implicit-inspection-form" action="/implicit_inspection" method="POST">
+              <input type="hidden" name="image_path" id="selected-image-path-implicit">
+              <div class="form-row">
+                <label for="block_id">Block ID:</label>
+                <input type="number" name="block_id" required>
+              </div>
+              <div class="form-row">
+                <label for="cluster_id">Cluster ID:</label>
+                <input type="number" name="cluster_id" required>
+              </div>
+              <div style="text-align:center;">
+                <button type="submit" class="btn-elegant">Run Implicit Inspection</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Comparative Inspection -->
+        <button type="button" class="accordion-btn" onclick="toggleAccordion('comparative-section')">
+          Comparative Inspection
+        </button>
+        <div id="comparative-section" class="accordion-content" style="display: none;">
+          <!-- 
+            Form to run comparative inspection. 
+            Allows the user to see exemplars for the same or different clusters for deeper comparison.
+            Posts to the "comparative_inspection" route in app.py.
+          -->
+          <div class="modern-form">
+            <p>Compare examples between the closest and different concepts</p>
+            <form id="comparative-inspection-form" action="/comparative_inspection" method="POST">
+              <input type="hidden" name="image_path" id="selected-image-path-comparative">
+              <div class="form-row">
+                <label for="block_id">Block ID:</label>
+                <input type="number" name="block_id" required>
+              </div>
+              <div class="form-row">
+                <label for="cluster_id">Cluster ID:</label>
+                <input type="number" name="cluster_id" required>
+              </div>
+              <div class="form-row">
+                <label for="num_exemplars">Number of Exemplars:</label>
+                <input type="number" name="num_exemplars" required>
+              </div>
+              <div style="text-align:center;">
+                <button type="submit" class="btn-elegant">Run Comparative Inspection</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Interventional Inspection -->
+        <button type="button" class="accordion-btn" onclick="toggleAccordion('interventional-section')">
+          Interventional Inspection
+        </button>
+        <div id="interventional-section" class="accordion-content" style="display: none;">
+          <!-- 
+            Form to run interventional inspection. 
+            The user chooses a block and cluster to intervene on, analyzing how the model changes in that scenario.
+            Posts to the "interventional_inspection" route in app.py.
+          -->
+          <div class="modern-form">
+            <p>Implement a different concept on the input image</p>
+            <form id="interventional-inspection-form" action="/interventional_inspection" method="POST">
+              <input type="hidden" name="image_path" id="selected-image-path-interventional">
+              <div class="form-row">
+                <label for="block_id">Block ID:</label>
+                <input type="number" name="block_id" required>
+              </div>
+              <div class="form-row">
+                <label for="cluster_id">Cluster ID:</label>
+                <input type="number" name="cluster_id" required>
+              </div>
+              <div style="text-align:center;">
+                <button type="submit" class="btn-elegant">Run Interventional Inspection</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Section -->
+    <div class="right">
+      <div class="modern-box">
+        <h2 class="modern-subtitle">Output Section</h2>
+      </div>
+
+      <!-- 
+        Condition to display plots if available. 
+        If no plot_paths are passed from Flask, a message is displayed instead.
+        In app.py, returning "plot_paths" is optional; otherwise we show a default message.
+      -->
+      {% if plot_paths %}
+        {% for plot in plot_paths %}
+          <img src="{{ plot }}" alt="Generated Plot" class="plot-image">
+        {% endfor %}
+      {% else %}
+        <p style="font-family:'Comic Sans MS'; font-weight:bold; font-size:16px;">
+          No Plot Available for Visualization.
+        </p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- 
+    Gallery Modal: 
+    Displays a thumbnail grid of all images so the user can choose 
+    which image to analyze. 
+    This modal is toggled via "openGallery()" and "closeGallery()" in script.js.
+  -->
+  <div id="galleryModal" class="modal">
+    <div class="modal-header">
+      <span>Select an Image for Analysis</span>
+      <button class="close-btn" onclick="closeGallery()">X</button>
+    </div>
+    <div class="modal-content">
+      <div class="gallery-container" id="gallery-container"></div>
+    </div>
+    <div class="modal-footer">
+      <span>CLEVR_4_classid Images</span>
+    </div>
+  </div>
+  <div id="overlay" class="overlay" onclick="closeGallery()"></div>
+
+  <!-- 
+    Plot Modal: 
+    Displays any generated plot in a larger overlay, 
+    allowing the user to view results in more detail.
+    Opened via "openPlotModal()" and closed with "closePlotModal()" in script.js.
+  -->
+  <div id="plotModal" class="plot-modal">
+    <div class="plot-modal-content">
+      <span class="plot-close-btn" onclick="closePlotModal()">X</span>
+      <img id="plotModalImage" src="" alt="Enlarged Plot" />
+    </div>
+  </div>
+
+  <!-- 
+    JSON data elements: 
+    These scripts hold serialized data passed from Flask, 
+    such as the list of images and the name of the first image.
+    script.js will parse these and use them to initialize the gallery and displayed image.
+  -->
+  <script id="image-data" type="application/json">
+    {{ image_list | tojson if image_list else '[]' }}
+  </script>
+  <script id="first-image" type="application/json">
+    {{ first_image | tojson if first_image else '""' }}
+  </script>
+  
+  <!-- 
+    Link to the main JavaScript logic file, script.js. 
+    Handles dynamic behavior (gallery, accordions, feedback submissions, etc.).
+    This file is located in the static/js/ directory as per Flask's defaults.
+  -->
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
