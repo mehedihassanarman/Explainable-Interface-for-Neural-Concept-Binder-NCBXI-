@@ -22,8 +22,7 @@ To run this project, please follow the steps below:
 
 5. `cd Explainable-Interface-for-Neural-Concept-Binder-NCBXI-`
 
-6.  ```bash
-python -m venv .venv
+6. python -m venv .venv
 .venv/Scripts/activate
 
 7. `pip install -r requirements.txt`
