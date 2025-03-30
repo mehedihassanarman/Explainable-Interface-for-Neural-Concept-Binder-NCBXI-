@@ -27,7 +27,13 @@ python -m venv .venv
 .venv/Scripts/activate
 
 pip install -r requirements.txt
-   
+
+pip install natsorted
+
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu117
+
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+
 cd NeuralConceptBinder
    
 pip install -e sysbinder
