@@ -16,7 +16,7 @@ To run this project, please follow the steps below:
 
 2. Create a folder named `model` and download the folder `CLEVR-4` from the following link [CLEVR-4.zip](https://hessenbox.tu-darmstadt.de/getlink/fi6WzuWtQ87Px5P3ewEVNQyZ/CLEVR-4.zip). After extracting, ensure the path structure is as follows: `model/CLEVR-4/retbind_seed_2/best_model.pt"`   
 
-3. Open the `root` folder and execute the following commands in the terminals:
+3. Open the `root` folder and execute the following commands in the Terminal:
 
 ```bash
 git clone https://github.com/mehedihassanarman/Explainable-Interface-for-Neural-Concept-Binder-NCBXI-.git
