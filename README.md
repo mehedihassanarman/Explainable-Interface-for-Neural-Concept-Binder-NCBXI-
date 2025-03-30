@@ -28,8 +28,6 @@ python -m venv .venv
 
 pip install -r requirements.txt
 
-pip install natsorted
-
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu117
 
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
