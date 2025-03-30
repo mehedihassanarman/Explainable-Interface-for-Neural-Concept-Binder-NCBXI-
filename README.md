@@ -14,7 +14,7 @@ To run this project, please follow the steps below:
 
 1. Create a folder named `data` and download the folder `CLEVR-4-1` from the following link [CLEVR-4-1.zip](https://hessenbox.tu-darmstadt.de/getlink/fiVCLMaZkEuf5f6HYG58sshV/CLEVR-4-1.zip). After extracting, ensure the path structure is as follows: `data/CLEVR-4-1/test/images/CLEVR_4_classid_0_000000.png` 
 
-2. Create a folder named `model` and download the folder `CLEVR-4` from the following link [CLEVR-4.zip](https://hessenbox.tu-darmstadt.de/getlink/fi6WzuWtQ87Px5P3ewEVNQyZ/CLEVR-4.zip). After extracting, ensure the path structure is as follows: `model/CLEVR-4/retbind_seed_2/best_model.pt"`   
+2. Create a folder named `model` and download the folder `CLEVR-4` from the following link [CLEVR-4.zip](https://hessenbox.tu-darmstadt.de/getlink/fi6WzuWtQ87Px5P3ewEVNQyZ/CLEVR-4.zip). After extracting, ensure the path structure is as follows: `model/CLEVR-4/retbind_seed_2/best_model.pt`   
 
 3. Open the `root` folder in VS Code and execute the following commands in the Terminal:
 
