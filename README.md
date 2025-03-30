@@ -34,6 +34,6 @@ pip install -e sysbinder
 
 cd ..
 python app.py
-***
+```
 
 The required Python version for this project is 3.10.10.
