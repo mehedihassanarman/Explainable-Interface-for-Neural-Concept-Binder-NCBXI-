@@ -22,15 +22,17 @@ To run this project, please follow the steps below:
 
 5. `cd Explainable-Interface-for-Neural-Concept-Binder-NCBXI-`
 
-6.  `python -m venv .venv
-   .venv/Scripts/activate`
+6.  `python -m venv .venv`
+   `.venv/Scripts/activate`
 
-7. `cd NeuralConceptBinder`
+7. `pip install -r requirements.txt`
+   
+8. `cd NeuralConceptBinder`
    
 9. `pip install -e sysbinder`
 
-10. `cd ..
-    python app.py`
+10. `cd ..`
+    `python app.py`
 
 
 The required Python version for this project is 3.10.10.
