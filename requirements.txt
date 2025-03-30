@@ -10,7 +10,6 @@ hdbscan==0.8.40
 matplotlib==3.10.0
 seaborn==0.13.2
 pycocotools==2.0.8
-natsorted
 einops==0.8.0
 tqdm==4.66.4
 flask==3.1.0
