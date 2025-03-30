@@ -9,7 +9,7 @@ The NCB’s technical innovation lies in how it structures the learning process.
 Our motivation for developing a web application around the NCB is to bring this complex and innovative model to life in a way that is engaging and accessible. By visualizing the implicit, comparative, and interventional processes of NCB, we provide a hands-on way for users to interact with and understand the power of concept-based learning. The web app allows users to explore how NCB binds features to concepts, compare it with traditional unsupervised learning methods, and observe the effects of various interventions on the model’s learned representations. This interactive approach demystifies the inner workings of NCB, making it easier to appreciate its contributions to the field of unsupervised learning and its potential applications. By offering a dynamic and visual representation of such a sophisticated model, we hope to inspire further research and experimentation in structured, unsupervised learning.
 
 
-## Installtion
+## Installation
 To run this project, please follow the steps below:
 
 1. Create a folder named `data` and download the folder `CLEVR-4-1` from the following link [CLEVR-4-1.zip](https://hessenbox.tu-darmstadt.de/getlink/fiVCLMaZkEuf5f6HYG58sshV/CLEVR-4-1.zip). After extracting, ensure the path structure is as follows: `data/CLEVR-4-1/test/images/CLEVR_4_classid_0_000000.png` 
