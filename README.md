@@ -18,22 +18,22 @@ To run this project, please follow the steps below:
 
 3. Open the `root` folder and execute the following commands in the terminals:
 
-4. `git clone https://github.com/mehedihassanarman/Explainable-Interface-for-Neural-Concept-Binder-NCBXI-.git`
-
-5. `cd Explainable-Interface-for-Neural-Concept-Binder-NCBXI-`
-
 ```bash
+git clone https://github.com/mehedihassanarman/Explainable-Interface-for-Neural-Concept-Binder-NCBXI-.git
+
+cd Explainable-Interface-for-Neural-Concept-Binder-NCBXI-
+
 python -m venv .venv
 .venv/Scripts/activate
 
-7. `pip install -r requirements.txt`
+pip install -r requirements.txt
    
-8. `cd NeuralConceptBinder`
+cd NeuralConceptBinder
    
-9. `pip install -e sysbinder`
+pip install -e sysbinder
 
-10. `cd ..`
-    `python app.py`
-
+cd ..
+python app.py
+***
 
 The required Python version for this project is 3.10.10.
