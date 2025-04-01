@@ -4,7 +4,8 @@ Unsupervised learning is one of the most challenging problems in machine learnin
 
 ![home.png](https://github.com/mehedihassanarman/Explainable-Interface-for-Neural-Concept-Binder-NCBXI-/blob/main/static/images/icons/home.png)
 
-[![Watch the video]([https://img.youtube.com/vi/nwqOdnqZ33o/maxresdefault.jpg](https://github.com/mehedihassanarman/Explainable-Interface-for-Neural-Concept-Binder-NCBXI-/blob/main/static/images/icons/home.png))](https://www.youtube.com/watch?v=nwqOdnqZ33o)
+[![Watch the video](https://img.youtube.com/vi/nwqOdnqZ33o/maxresdefault.jpg)](https://www.youtube.com/watch?v=nwqOdnqZ33o)
+
 
 
 The NCB’s technical innovation lies in how it structures the learning process. Unlike typical unsupervised learning methods, which may produce abstract or fragmented representations, NCB organizes the learned features in a way that aligns with human-understandable concepts. The model operates by binding learned visual representations to a latent space that is interpretable in terms of concepts such as color, shape, and object type. This structured approach enables the model to not only recognize features in isolation but also understand their relationships, allowing for more coherent and robust learning. Furthermore, the NCB framework introduces a concept-based bottleneck mechanism that helps the model focus on the most meaningful and relevant aspects of the data. This makes NCB a powerful tool for tasks such as zero-shot learning, concept-based reasoning, and image generation, all without the need for labeled training data.
