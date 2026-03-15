@@ -21,7 +21,7 @@ To run this project, please follow the steps below:
 ```bash
 git clone https://github.com/mehedihassanarman/Explainable-Interface-for-Neural-Concept-Binder-NCBXI-.git
 
-cd Explainable-Interface-for-Neural-Concept-Binder-NCBXI-
+cd NCBXI
 
 python -m venv .venv
 .venv/Scripts/activate
